@@ -17,7 +17,11 @@
 
     </video-player>
   </keep-alive>
-
+  <div  v-if="currentTime">
+    <div>Current time has changed : {{currentTime}}</div>
+    <div>Current Time video: {{convertSecond2Time(currentTime)}}</div>
+    <div>Available Time video: {{convertSecond2Time(remainingTime)}}</div>
+  </div>
 
 </div>
 
@@ -27,20 +31,7 @@
   body{
     font-family: sans-serif;
   }
-  .btn{
-    -webkit-user-select: none;  /* Chrome all / Safari all */
-    -moz-user-select: none;     /* Firefox all */
-    -ms-user-select: none;      /* IE 10+ */
-    user-select: none;
-    cursor: pointer;
-    background: #d46161;
-    color: white;
-    padding: 10px;
-    margin: 10px 0px;
-    font-family: sans-serif;
-    font-size: 14px;
-    display: inline-block;
-  }
+
   .group-input label{
     display: block;
     font-size: 13px;
@@ -83,13 +74,12 @@ export default {
         source:[
             {
                 type: "video/youtube",
-                src: "https://www.youtube.com/watch?v=iD_MyDbP_ZE"
+                src: "https://www.youtube.com/watch?v=Vpg9yizPP_g"
             },
             {
                 type:"video/youtube",
-                src:"https://www.youtube.com/watch?v=lcHlywuHNwI"
+                src:"https://www.youtube.com/watch?v=3Nu74DGCjV8"
             }
-
         ]
         ,
         techOrder: ["youtube"],
@@ -104,10 +94,7 @@ export default {
 
   },
   mounted(){
-    console.log(this.$refs.myPlayer.$el);
-
   },
-
   methods: {
      onPause(){
       console.log('on Pause');
@@ -124,7 +111,7 @@ export default {
     },
 
     onSeek(seek){
-      console.log('on Seek at:',seek.seek_at)
+      console.log('on Seek at:',seek.seek_at , '('+ this.convertSecond2Time(seek.seek_at) + ')')
     },
     playerStateChanged(playerCurrentState) {
       if(typeof playerCurrentState.currentTime != 'undefined'){
@@ -132,9 +119,11 @@ export default {
         this.remainingTime = playerCurrentState.remainingTime;
       }
     },
-    showLogCurrentTime(){
-      if(!this.currentTime) return false;
-      console.log('video current time has changed :',this.currentTime);
+
+    convertSecond2Time(s){
+      var date = new Date(1970,0,1);
+      date.setSeconds(s);
+      return date.toTimeString().replace(/.*(\d{2}:\d{2}:\d{2}).*/, "$1");
     },
     resolutionChange(){
       console.log('Resolution Change');

@@ -208,37 +208,38 @@
 
           });
 
-        var tmp_src = null;
 
+        var last_seek_at = null;
         this.on('seeked',function () {
 
+          var __this = this;
           var tmp = this.currentTime();
 
-
-          var current_src = this.src().src;
-          if(tmp_src && tmp_src == current_src){
+          if(parseInt(this.currentTime()) == parseInt(last_seek_at)){
+            // when change source , event seeked fire two times. but the second event will be not fire
             return;
           }
 
+          var current_src = this.src().src;
 
           var index_next = options.source.findIndex(function(v){
             return v.src != current_src
           });
           var video_next = options.source[index_next].src;
 
-          tmp_src = video_next;
+            myCustomSrcPicker(__this,  {
+              type:"video/youtube",
+              src:video_next
+            });
 
-          myCustomSrcPicker(this,  {
-            type:"video/youtube",
-            src:video_next
-          });
+             __this.on("loadedmetadata", function() {
+               __this.currentTime(tmp).play();
+            });
 
-          this.on("loadedmetadata", function() {
-            this.currentTime(tmp);
-          });
+            last_seek_at = tmp;
+            _this.$emit && _this.$emit('onseek', { seek_at: tmp })
+            _this.$dispatch && _this.$dispatch('onseek', { seek_at: tmp })
 
-          _this.$emit && _this.$emit('onseek', { seek_at: this.currentTime() })
-          _this.$dispatch && _this.$dispatch('onseek', { seek_at: this.currentTime() })
 
         });
 
@@ -349,8 +350,6 @@
             }
           }
           if (this.player) this.player.src(this.options.source)
-
-          console.log('this.options.source',this.options.source);
 
           if (!this.player) this.initialize()
         },
