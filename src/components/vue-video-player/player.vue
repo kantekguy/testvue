@@ -1,3 +1,4 @@
+<script src="../../../node_modules/videojs-youtube/dist/Youtube.js"></script>
 <template>
   <div class="video-player">
     <video class="video-js vjs-custom-skin" :class="{ 'live': options.live }"></video>
@@ -128,6 +129,11 @@
 
         // 添加指定语言
         var language = video_options.language
+
+        function  myCustomSrcPicker(_p, _s, _l){
+            return _p.src(_s);
+
+        }
         videojs.addLanguage(language, languages[language])
 
         // 是否应用IOS下的禁止自动全屏
@@ -146,7 +152,7 @@
 
           // 多播放源切换
           } else {
-            video_options.plugins = { videoJsResolutionSwitcher: { default: options.defaultSrcReId, dynamicLabel: true }}
+            video_options.plugins = {  videoJsResolutionSwitcher: { default: options.defaultSrcReId, dynamicLabel: true,  customSourcePicker: myCustomSrcPicker }}
           }
 
           // 是否使用播放速度控制
@@ -157,15 +163,26 @@
         // 实例化播放器
         var _this = this
         this.player = null
+
+
+        var myCustomSrcPicker = function(_p, _s, _l){
+          return _p.src(_s);
+        }
+
         this.player = videojs(this.$el.children[0], video_options, function() {
 
           // 是否应用多版本切换清晰度
           if (!options.live) {
+
             if (!!options.source.length) {
               this.updateSrc(options.source)
               this.on('resolutionchange', function(){
+
                 _this.$emit && _this.$emit(customEventName, { resolutionchange: this.src() })
                 _this.$dispatch && _this.$dispatch(customEventName, { resolutionchange: this.src() })
+
+                _this.$emit && _this.$emit('resolutionchange', { resolutionchange: this.src() })
+                _this.$dispatch && _this.$dispatch('resolutionchange', { resolutionchange: this.src() })
               })
             }
           }
@@ -187,21 +204,54 @@
 
           // 监听播放
 
+          this.on("seeking", function() {
+
+          });
+
+        var tmp_src = null;
+
+        this.on('seeked',function () {
+
+          var tmp = this.currentTime();
+
+
+          var current_src = this.src().src;
+          if(tmp_src && tmp_src == current_src){
+            return;
+          }
+
+
+          var index_next = options.source.findIndex(function(v){
+            return v.src != current_src
+          });
+          var video_next = options.source[index_next].src;
+
+          tmp_src = video_next;
+
+          myCustomSrcPicker(this,  {
+            type:"video/youtube",
+            src:video_next
+          });
+
+          this.on("loadedmetadata", function() {
+            this.currentTime(tmp);
+          });
+
+          _this.$emit && _this.$emit('onseek', { seek_at: this.currentTime() })
+          _this.$dispatch && _this.$dispatch('onseek', { seek_at: this.currentTime() })
+
+        });
 
           this.on('play', function() {
-
             _this.$emit && _this.$emit(customEventName, { play: true })
             _this.$dispatch && _this.$dispatch(customEventName, { play: true })
-
             _this.$emit && _this.$emit('onplay', { onplay: true })
             _this.$dispatch && _this.$dispatch('onplay', { onplay: true })
 
           })
 
           // 监听暂停
-          this.on('vjs-fullscreenchange', function() {
-            console.log(1);
-          })
+
           this.on('pause', function() {
             _this.$emit && _this.$emit(customEventName, { pause: true })
             _this.$dispatch && _this.$dispatch(customEventName, { pause: true })
@@ -219,10 +269,8 @@
             _this.$dispatch && _this.$dispatch('onend', { onend: true })
           })
 
-
           // 元文件信息
           this.on('loadeddata', function() {
-
 
             if (!options.live && !!options.start) this.currentTime(options.start)
             this.muted(_this.options.muted)
@@ -230,53 +278,35 @@
             _this.$dispatch && _this.$dispatch(customEventName, { loadeddata: true })
           })
 
-
-
-
-
-
-
           // 监听时间
 
-          var last_time = null;
 
           this.on('timeupdate', function() {
-
-            if (Math.abs(this.currentTime() - last_time - 1) > 1) {
-              _this.$emit && _this.$emit('onseek', { seek_at: this.currentTime() })
-              _this.$dispatch && _this.$dispatch('onseek', { seek_at: this.currentTime() })
-
-            }
 
             _this.$emit && _this.$emit(customEventName, { currentTime: this.currentTime(),remainingTime:this.remainingTime() })
             _this.$dispatch && _this.$dispatch(customEventName, { currentTime: this.currentTime() ,remainingTime:this.remainingTime()})
 
-            last_time = this.currentTime();
           })
+
+
+
+          this.on('fullscreenchange', function() {
+              if(this.isFullscreen()){
+                console.log('Fulscreen');
+                return
+              }
+              console.log('exit Fulscreen');
+          })
+
         })
 
 
-        var player = this.player;
-        if (document.addEventListener)
-        {
-
-          document.addEventListener('webkitfullscreenchange', exitHandler, true);
-          document.addEventListener('mozfullscreenchange', exitHandler, true);
-          document.addEventListener('fullscreenchange', exitHandler, true);
-          document.addEventListener('MSFullscreenChange', exitHandler(), true);
-
-        }
-        function exitHandler()
-        {
-
-
-            console.log('video fullscreen state has changed');
-        }
 
         this.player.ready(function(){
 
           _this.$emit && _this.$emit('onready', { onready: true})
           _this.$dispatch && _this.$dispatch('onready', { onready: true})
+
         });
 
       },
@@ -294,6 +324,7 @@
       // 观察选项的动态变化，选项变化了就重新初始化播放器
       options: {
         handler: function (newVal, oldVal) {
+
           var options = newVal
           if (typeof options.source !== 'object') {
             this.dispose()
@@ -309,18 +340,25 @@
               }
             } else {
               if (!options.source.src) {
-                this.dispose()
-                return console.warn('video resource is illegitimate')
+
+
+                return ;
+               /* this.dispose()
+                return console.warn('video resource is illegitimate')*/
               }
             }
           }
           if (this.player) this.player.src(this.options.source)
+
+          console.log('this.options.source',this.options.source);
+
           if (!this.player) this.initialize()
         },
         deep: true
       }
     }
   }
+
 </script>
 
 <style src="./player.css"></style>

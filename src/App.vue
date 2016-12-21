@@ -5,29 +5,18 @@
     <video-player
             :options="videoOptions"
             ref="myPlayer"
-            :config="{ youtube: true }"
+            :config="{  youtube: true}"
             @player-state-changed="playerStateChanged"
             @onready="onReady"
             @onpause="onPause"
             @onplay="onPlay"
             @onend="onEnd"
             @onseek="onSeek"
+            @resolutionchange="resolutionChange"
     >
 
     </video-player>
   </keep-alive>
-
-  <div  v-if="currentTime">
-    <a @click.prevent="showLogCurrentTime" class="btn">show Log video current time has changed</a>
-    <div>Current Time video: {{convertSecond2Time(currentTime)}}</div>
-    <div>Available Time video: {{convertSecond2Time(remainingTime)}}</div>
-  </div>
-
-  <div class="group-input">
-    <label for="">change video link:</label>
-    <input type="text" v-model="videoOptions.source.src">
-    <p class="note"><strong>example:</strong> https://www.youtube.com/watch?v=lcHlywuHNwI</p>
-  </div>
 
 
 </div>
@@ -81,6 +70,7 @@ require('videojs-youtube')
 import {videoPlayer} from './components/vue-video-player';
 //overwrite package vue-video-player
 
+
 export default {
   name: 'app',
   components: {
@@ -90,15 +80,21 @@ export default {
 
     return {
       videoOptions: {
-        source:
-          {
-            type: "video/youtube",
-            src: "https://www.youtube.com/watch?v=iD_MyDbP_ZE"
-          }
+        source:[
+            {
+                type: "video/youtube",
+                src: "https://www.youtube.com/watch?v=iD_MyDbP_ZE"
+            },
+            {
+                type:"video/youtube",
+                src:"https://www.youtube.com/watch?v=lcHlywuHNwI"
+            }
+
+        ]
         ,
         techOrder: ["youtube"],
         autoplay: false,
-        controls: false,
+        controls: true,
         ytControls: true
       },
       remainingTime:null,
@@ -111,18 +107,9 @@ export default {
     console.log(this.$refs.myPlayer.$el);
 
   },
-  watch:{
-    'videoOptions.source.src':function (o,n){
-      console.log('video source has changed');
-    }
-  },
+
   methods: {
-    convertSecond2Time(s){
-        var date = new Date(1970,0,1);
-        date.setSeconds(s);
-        return date.toTimeString().replace(/.*(\d{2}:\d{2}:\d{2}).*/, "$1");
-    },
-    onPause(){
+     onPause(){
       console.log('on Pause');
     },
     onPlay(){
@@ -148,6 +135,9 @@ export default {
     showLogCurrentTime(){
       if(!this.currentTime) return false;
       console.log('video current time has changed :',this.currentTime);
+    },
+    resolutionChange(){
+      console.log('Resolution Change');
     }
   }
 }
