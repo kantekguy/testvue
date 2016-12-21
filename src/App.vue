@@ -18,6 +18,7 @@
     </video-player>
   </keep-alive>
   <div  v-if="currentTime">
+    <h5>video : {{video_title}}</h5>
     <div>Current time has changed : {{currentTime}}</div>
     <div>Current Time video: {{convertSecond2Time(currentTime)}}</div>
     <div>Available Time video: {{convertSecond2Time(remainingTime)}}</div>
@@ -60,7 +61,8 @@ require('videojs-youtube')
 //resolve error: VIDEOJS: ERROR: The "Youtube" tech is undefined. Skipped browser support check for that tech.
 import {videoPlayer} from './components/vue-video-player';
 //overwrite package vue-video-player
-
+import axios from 'axios';
+import _ from 'lodash';
 
 export default {
   name: 'app',
@@ -89,23 +91,61 @@ export default {
       },
       remainingTime:null,
       currentTime:null,
-      duration:null
+      duration:null,
+      currentSrc:null,
+      video_title:null
     }
+  },
+
+
+  created(){
+      var _this = this;
+      _.forEach(
+          this.videoOptions.source,
+          function(source,i){
+            axios.get('https://noembed.com/embed',{
+              params: {
+                format: 'json',
+                url: source.src
+              }
+            })
+            .then(function (response) {
+              _this.videoOptions.source[i].title = response.data.title;
+            })
+            .catch(function (error) {
+              console.log(error);
+            });
+          }
+
+      )
 
   },
   mounted(){
+
   },
+
+  watch:{
+    currentSrc(newVal,oldVal){
+      this.video_title = this.videoOptions.source.filter(function (v, i) {
+        return v.src == newVal;
+      })[0].title;
+    }
+  },
+
+
   methods: {
      onPause(){
       console.log('on Pause');
     },
-    onPlay(){
+    onPlay(data){
+      this.currentSrc = data.src;
       console.log('on Play');
     },
     onEnd(){
       console.log('video has completed');
     },
     onReady(data){
+      this.currentSrc = data.src;
       this.duration = data.duration;
       console.log('on Ready')
     },
@@ -127,6 +167,13 @@ export default {
     },
     resolutionChange(){
       console.log('Resolution Change');
+    },
+    getIdYoutube(url){
+
+        var regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#\&\?]*).*/;
+        var match = url.match(regExp);
+        return (match&&match[7].length==11)? match[7] : false;
+
     }
   }
 }

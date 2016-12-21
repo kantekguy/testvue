@@ -210,6 +210,7 @@
 
 
         var last_seek_at = null;
+
         this.on('seeked',function () {
 
           var __this = this;
@@ -246,8 +247,8 @@
           this.on('play', function() {
             _this.$emit && _this.$emit(customEventName, { play: true })
             _this.$dispatch && _this.$dispatch(customEventName, { play: true })
-            _this.$emit && _this.$emit('onplay', { onplay: true })
-            _this.$dispatch && _this.$dispatch('onplay', { onplay: true })
+            _this.$emit && _this.$emit('onplay', { onplay: true ,src:this.src().src})
+            _this.$dispatch && _this.$dispatch('onplay', { onplay: true,src:this.src().src })
 
           })
 
@@ -305,8 +306,8 @@
 
         this.player.ready(function(){
 
-          _this.$emit && _this.$emit('onready', { onready: true})
-          _this.$dispatch && _this.$dispatch('onready', { onready: true})
+          _this.$emit && _this.$emit('onready', { onready: true,src:this.src().src})
+          _this.$dispatch && _this.$dispatch('onready', { onready: true,src:this.src().src})
 
         });
 
